@@ -1,53 +1,42 @@
-import { useState, useEffect, useRef } from "react";
-
+import { useState, useEffect } from "react";
 import { fetchAnime } from "./assets/APImalfetch";
 
-export function Animecards(){
-  const [animelist, setAnimelist] = useState([Array.from({ length: 10 }, (_, i) => i + 1)]);
-  const [currentAnimeIDs, setCurrentAnimeIDs] = useState([]);
-
-  function fetchdata(){
-    fetchAnime(currentAnimeIDs).then((anime) => {
-      setAnimelist((prevList) => [...prevList, anime]);
-    });
-  }
-
-  for (let i = 0; i < currentAnimeIDs.length; i++){
-    setTimeout(fetchdata, 333);
-  }
+export function Animecards() {
+  const [animelist, setAnimelist] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true); // Stops when no more data
 
   useEffect(() => {
-    const timeout = setTimeout();
-    
-    setCurrentAnimeIDs((prevIDs) => {
-      return [Array.from({ length: 10 }, (_, i) => i + prevIDs[prevIDs.length - 1] + 1)];
-    });
-
-    function fetchdata(){
-      fetchAnime(currentAnimeIDs).then((anime) => {
-        setAnimelist((prevList) => [...prevList, anime]);
-      });
+    async function fetchData() {
+      setLoading(true);
+      const newAnime = await fetchAnime(page);
+      if (newAnime.length > 0) {
+        setAnimelist((prevList) => [...prevList, ...newAnime]);
+      } else {
+        setHasMore(false); // No more pages
+      }
+      setLoading(false);
     }
 
-    for (let i = 0; i < currentAnimeIDs.length; i++){
-      timeout(fetchdata, 333);
-    }
-
-    return () => timeout.forEach(clearTimeout);
-
-  }, []);
-
-  
+    fetchData();
+  }, [page]);
 
   return (
     <>
       {animelist.map((anime, index) => (
         <div key={index}>
-          <h2>{anime.title + " " + anime.id}</h2>
+          <h2>{anime.title} {anime.id}</h2>
           <img src={anime.img} alt={anime.title} />
           <p>{anime.rate}</p>
         </div>
       ))}
+
+      {hasMore && !loading && (
+        <button onClick={() => setPage(page + 1)}>Load More</button>
+      )}
+
+      {loading && <p>Loading...</p>}
     </>
   );
 }
